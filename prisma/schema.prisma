@@ -1,0 +1,245 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model commissions {
+  id                Int      @id @default(autoincrement())
+  user_id           Int
+  sale_id           Int?
+  commission_amount Decimal  @db.Decimal(10, 2)
+  calculated_at     DateTime @db.DateTime(0)
+  sales             sales?   @relation(fields: [sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_sales_commissions")
+  users             users    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_commissions")
+
+  @@index([sale_id], map: "fk_sales_commissions")
+  @@index([user_id], map: "fk_users_commissions")
+}
+
+model customers {
+  id                                Int          @id @default(autoincrement())
+  name                              String       @db.VarChar(100)
+  nit                               String       @db.VarChar(50)
+  address                           String       @db.VarChar(100)
+  phone                             Int
+  email                             String       @db.VarChar(100)
+  creator_id                        Int
+  created_at                        DateTime     @db.DateTime(0)
+  updater_id                        Int
+  updated_at                        DateTime     @db.DateTime(0)
+  users_customers_creator_idTousers users        @relation("customers_creator_idTousers", fields: [creator_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_creator_customers")
+  users_customers_updater_idTousers users        @relation("customers_updater_idTousers", fields: [updater_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_updater_customers")
+  deliveries                        deliveries[]
+  sales                             sales[]
+
+  @@index([creator_id], map: "fk_creator_customers")
+  @@index([updater_id], map: "fk_updater_customers")
+}
+
+model deliveries {
+  id                                 Int               @id @default(autoincrement())
+  customer_id                        Int
+  route_id                           Int
+  delivery_date                      DateTime          @db.DateTime(0)
+  status                             deliveries_status
+  creator_id                         Int
+  created_at                         DateTime          @db.DateTime(0)
+  updater_id                         Int
+  updated_at                         DateTime          @db.DateTime(0)
+  users_deliveries_creator_idTousers users             @relation("deliveries_creator_idTousers", fields: [creator_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_creator_deliveries")
+  customers                          customers         @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customers_deliveries")
+  routes                             routes            @relation(fields: [route_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_routes_deliveries")
+  users_deliveries_updater_idTousers users             @relation("deliveries_updater_idTousers", fields: [updater_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_updater_deliveries")
+
+  @@index([creator_id], map: "fk_creator_deliveries")
+  @@index([customer_id], map: "fk_customers_deliveries")
+  @@index([route_id], map: "fk_routes_deliveries")
+  @@index([updater_id], map: "fk_updater_deliveries")
+}
+
+model inventory_movements {
+  id            Int                               @id @default(autoincrement())
+  product_id    Int
+  movement_type inventory_movements_movement_type
+  quantity      Int
+  movement_date DateTime                          @db.DateTime(0)
+  creator_id    Int
+  users         users                             @relation(fields: [creator_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_creator_inventory_movements")
+  products      products                          @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_inventory_movements")
+
+  @@index([creator_id], map: "fk_creator_inventory_movements")
+  @@index([product_id], map: "fk_products_inventory_movements")
+}
+
+model products {
+  id                               Int                   @id @default(autoincrement())
+  name                             String                @db.VarChar(100)
+  description                      String                @db.Text
+  unit_price                       Decimal               @db.Decimal(10, 2)
+  stock_quantity                   Int
+  minimum_stock_threshold          Int
+  creator_id                       Int
+  created_at                       DateTime              @db.DateTime(0)
+  updater_id                       Int
+  updated_at                       DateTime              @db.DateTime(0)
+  inventory_movements              inventory_movements[]
+  users_products_creator_idTousers users                 @relation("products_creator_idTousers", fields: [creator_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_creator_products")
+  users_products_updater_idTousers users                 @relation("products_updater_idTousers", fields: [updater_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_updater_products")
+  sale_items                       sale_items[]
+
+  @@index([creator_id], map: "fk_creator_products")
+  @@index([updater_id], map: "fk_updater_products")
+}
+
+model roles {
+  id          Int           @id @default(autoincrement())
+  name        String        @db.VarChar(100)
+  created_at  DateTime      @db.DateTime(0)
+  updated_at  DateTime      @db.DateTime(0)
+  permissions permissions[]
+  users       users[]
+}
+
+model routes {
+  id                              Int          @id @default(autoincrement())
+  route_name                      String       @db.VarChar(100)
+  zone                            String       @db.VarChar(100)
+  assigned_to                     Int
+  creator_id                      Int
+  created_at                      DateTime     @db.DateTime(0)
+  updater_id                      Int
+  updated_at                      DateTime     @db.DateTime(0)
+  deliveries                      deliveries[]
+  users_routes_creator_idTousers  users        @relation("routes_creator_idTousers", fields: [creator_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_creator_routes")
+  users_routes_updater_idTousers  users        @relation("routes_updater_idTousers", fields: [updater_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_updater_routes")
+  users_routes_assigned_toTousers users        @relation("routes_assigned_toTousers", fields: [assigned_to], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_routes")
+
+  @@index([creator_id], map: "fk_creator_routes")
+  @@index([updater_id], map: "fk_updater_routes")
+  @@index([assigned_to], map: "fk_users_routes")
+}
+
+model sale_items {
+  id         Int      @id @default(autoincrement())
+  sale_id    Int?
+  product_id Int
+  quantity   Int
+  unit_price Decimal  @db.Decimal(10, 2)
+  products   products @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_sale_items")
+  sales      sales?   @relation(fields: [sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_sales_sale_items")
+
+  @@index([product_id], map: "fk_products_sale_items")
+  @@index([sale_id], map: "fk_sales_sale_items")
+}
+
+model sales {
+  id           Int           @id @default(autoincrement())
+  sale_date    DateTime      @db.DateTime(0)
+  total_amount Decimal       @db.Decimal(10, 2)
+  customer_id  Int
+  seller_id    Int
+  commissions  commissions[]
+  sale_items   sale_items[]
+  customers    customers     @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customers_sales")
+  users        users         @relation(fields: [seller_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_seller_sales")
+
+  @@index([customer_id], map: "fk_customers_sales")
+  @@index([seller_id], map: "fk_seller_sales")
+}
+
+model sales_target {
+  id                                   Int      @id @default(autoincrement())
+  user_id                              Int
+  target_month                         Int
+  target_amount                        Decimal  @db.Decimal(10, 2)
+  achieved_amount                      Decimal  @db.Decimal(10, 2)
+  creator_id                           Int
+  created_at                           DateTime @db.DateTime(0)
+  updater_id                           Int
+  updated_at                           DateTime @db.DateTime(0)
+  users_sales_target_creator_idTousers users    @relation("sales_target_creator_idTousers", fields: [creator_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_creator_sales_target")
+  users_sales_target_updater_idTousers users    @relation("sales_target_updater_idTousers", fields: [updater_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_updater_sales_target")
+  users_sales_target_user_idTousers    users    @relation("sales_target_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_sales_target")
+
+  @@index([creator_id], map: "fk_creator_sales_target")
+  @@index([updater_id], map: "fk_updater_sales_target")
+  @@index([user_id], map: "fk_users_sales_target")
+}
+
+model users {
+  id                                          Int                   @id @default(autoincrement())
+  role_id                                     Int
+  name                                        String                @db.VarChar(100)
+  email                                       String                @db.VarChar(50)
+  password_hash                               String                @db.VarChar(1000)
+  created_at                                  DateTime              @db.DateTime(0)
+  updated_at                                  DateTime              @db.DateTime(0)
+  commissions                                 commissions[]
+  customers_customers_creator_idTousers       customers[]           @relation("customers_creator_idTousers")
+  customers_customers_updater_idTousers       customers[]           @relation("customers_updater_idTousers")
+  deliveries_deliveries_creator_idTousers     deliveries[]          @relation("deliveries_creator_idTousers")
+  deliveries_deliveries_updater_idTousers     deliveries[]          @relation("deliveries_updater_idTousers")
+  inventory_movements                         inventory_movements[]
+  modules                                     modules[]
+  permissions_permissions_creator_idTousers   permissions[]         @relation("permissions_creator_idTousers")
+  permissions_permissions_updater_idTousers   permissions[]         @relation("permissions_updater_idTousers")
+  products_products_creator_idTousers         products[]            @relation("products_creator_idTousers")
+  products_products_updater_idTousers         products[]            @relation("products_updater_idTousers")
+  routes_routes_creator_idTousers             routes[]              @relation("routes_creator_idTousers")
+  routes_routes_updater_idTousers             routes[]              @relation("routes_updater_idTousers")
+  routes_routes_assigned_toTousers            routes[]              @relation("routes_assigned_toTousers")
+  sales                                       sales[]
+  sales_target_sales_target_creator_idTousers sales_target[]        @relation("sales_target_creator_idTousers")
+  sales_target_sales_target_updater_idTousers sales_target[]        @relation("sales_target_updater_idTousers")
+  sales_target_sales_target_user_idTousers    sales_target[]        @relation("sales_target_user_idTousers")
+  roles                                       roles                 @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_roles_users")
+
+  @@index([role_id], map: "fk_roles_users")
+}
+
+model modules {
+  id          Int           @id @default(autoincrement())
+  name        String        @db.VarChar(50)
+  icon_name   String        @db.VarChar(25)
+  slug        String        @db.VarChar(25)
+  creator_id  Int
+  created_at  DateTime      @db.DateTime(0)
+  users       users         @relation(fields: [creator_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_creator_modules")
+  permissions permissions[]
+
+  @@index([creator_id], map: "fk_creator_modules")
+}
+
+model permissions {
+  id                                  Int      @id @default(autoincrement())
+  role_id                             Int
+  module_id                           Int
+  creator_id                          Int
+  created_at                          DateTime @db.DateTime(0)
+  updater_id                          Int
+  updated_at                          DateTime @db.DateTime(0)
+  users_permissions_creator_idTousers users    @relation("permissions_creator_idTousers", fields: [creator_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_creator_permissions")
+  modules                             modules  @relation(fields: [module_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_modules_permissions")
+  roles                               roles    @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_roles_permissions")
+  users_permissions_updater_idTousers users    @relation("permissions_updater_idTousers", fields: [updater_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_updater_permissions")
+
+  @@index([creator_id], map: "fk_creator_permissions")
+  @@index([updater_id], map: "fk_updater_permissions")
+  @@index([role_id], map: "fk_roles_permissions")
+  @@index([module_id], map: "fk_modules_permissions")
+}
+
+enum inventory_movements_movement_type {
+  in
+  out
+}
+
+enum deliveries_status {
+  pending
+  delivered
+  rescheduled
+}
